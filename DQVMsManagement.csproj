@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <!-- Target Windows; ensures compatibility with Windows-only APIs like Hyper-V -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- PowerShell SDK provides System.Management.Automation for PowerShell 7+ -->
+    <PackageReference Include="Microsoft.PowerShell.SDK" Version="7.4.0" />
+  </ItemGroup>
+</Project>

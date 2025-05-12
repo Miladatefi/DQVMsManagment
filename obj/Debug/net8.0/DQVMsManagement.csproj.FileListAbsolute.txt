@@ -1,0 +1,7 @@
+C:\Projects\DQVMsManagement\obj\Debug\net8.0\DQVMsManagement.GeneratedMSBuildEditorConfig.editorconfig
+C:\Projects\DQVMsManagement\obj\Debug\net8.0\DQVMsManagement.AssemblyInfoInputs.cache
+C:\Projects\DQVMsManagement\obj\Debug\net8.0\DQVMsManagement.AssemblyInfo.cs
+C:\Projects\DQVMsManagement\obj\Debug\net8.0\DQVMsManagement.csproj.CoreCompileInputs.cache
+C:\Projects\DQVMsManagement\obj\Debug\net8.0\DQVMsManagement.MvcApplicationPartsAssemblyInfo.cache
+C:\Projects\DQVMsManagement\obj\Debug\net8.0\DQVMsManagement.RazorAssemblyInfo.cache
+C:\Projects\DQVMsManagement\obj\Debug\net8.0\DQVMsManagement.RazorAssemblyInfo.cs
