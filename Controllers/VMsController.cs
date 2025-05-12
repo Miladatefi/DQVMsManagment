@@ -1,48 +1,57 @@
-using Microsoft.AspNetCore.Mvc;
 using DQVMsManagement.Models;
 using DQVMsManagement.Services;
+using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace DQVMsManagement.Controllers
 {
     public class VMsController : Controller
     {
         private readonly HyperVService _hyperV;
-
-        public VMsController(HyperVService hyperV)
-        {
-            _hyperV = hyperV;
-        }
+        public VMsController(HyperVService hyperV) => _hyperV = hyperV;
 
         // GET: /VMs/Index
         public IActionResult Index()
         {
-            List<VMInfo> vmList = _hyperV.GetVMs();
+            var vmList = _hyperV.GetVMs();
             return View(vmList);
         }
 
         // POST: /VMs/Start
         [HttpPost]
-        public IActionResult Start(string name)
+        [IgnoreAntiforgeryToken]
+        public IActionResult Start([FromBody] VMActionRequest req)
         {
-            _hyperV.StartVM(name);
-            return RedirectToAction(nameof(Index));
+            _hyperV.StartVM(req.Name);
+            return Ok();
         }
 
         // POST: /VMs/Stop
         [HttpPost]
-        public IActionResult Stop(string name)
+        [IgnoreAntiforgeryToken]
+        public IActionResult Stop([FromBody] VMActionRequest req)
         {
-            _hyperV.StopVM(name);
-            return RedirectToAction(nameof(Index));
+            _hyperV.StopVM(req.Name);
+            return Ok();
         }
 
         // POST: /VMs/Restart
         [HttpPost]
-        public IActionResult Restart(string name)
+        [IgnoreAntiforgeryToken]
+        public IActionResult Restart([FromBody] VMActionRequest req)
         {
-            _hyperV.RestartVM(name);
-            return RedirectToAction(nameof(Index));
+            _hyperV.RestartVM(req.Name);
+            return Ok();
+        }
+
+        // POST: /VMs/Checkpoint
+        [HttpPost]
+        [IgnoreAntiforgeryToken]
+        public async Task<IActionResult> Checkpoint([FromBody] VMActionRequest req)
+        {
+            await _hyperV.CreateCheckpointAsync(req.Name);
+            return Ok();
         }
     }
 }

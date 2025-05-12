@@ -1,58 +1,149 @@
 @model IEnumerable<DQVMsManagement.Models.VMInfo>
 
-@{
-    ViewData["Title"] = "VMs Dashboard";
-}
-
 <h1>Hyper-V Virtual Machines</h1>
 
-<p class="text-secondary">
-    Below is a list of VMs on this host along with their current CPU and memory usage.
-</p>
-
-<table class="table table-striped table-hover align-middle">
-    <thead class="table-dark">
-        <tr>
-            <th>Name</th>
-            <th>State</th>
-            <th>CPU Usage (%)</th>
-            <th>Memory (MB)</th>
-            <th class="text-center">Actions</th>
-        </tr>
-    </thead>
-    <tbody>
+<table class="table table-striped" id="vmTable">
+  <thead class="table-dark">
+    <tr>
+      <th>Name</th>
+      <th>State</th>
+      <th>CPU Usage (%)</th>
+      <th>Memory (MB)</th>
+      <th>Up Time</th>
+      <th class="text-center">Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    @* Initial rows (JS will overwrite) *@
     @foreach (var vm in Model)
     {
-        <tr>
-            <td>@vm.Name</td>
-            <td>@vm.State</td>
-            <td>@vm.CPUUsage%</td>
-            <td>@vm.MemoryAssignedMB</td>
-            <td class="text-center">
-                @if (vm.State.Equals("Running", StringComparison.OrdinalIgnoreCase))
-                {
-                    <form asp-action="Stop"   asp-controller="VMs" method="post" class="d-inline">
-                        <input type="hidden" name="name" value="@vm.Name" />
-                        <button type="submit" class="btn btn-danger btn-sm me-1">Stop</button>
-                    </form>
-                    <form asp-action="Restart" asp-controller="VMs" method="post" class="d-inline">
-                        <input type="hidden" name="name" value="@vm.Name" />
-                        <button type="submit" class="btn btn-warning btn-sm">Restart</button>
-                    </form>
-                }
-                else
-                {
-                    <form asp-action="Start" asp-controller="VMs" method="post" class="d-inline">
-                        <input type="hidden" name="name" value="@vm.Name" />
-                        <button type="submit" class="btn btn-success btn-sm">Start</button>
-                    </form>
-                }
-            </td>
-        </tr>
+      <tr data-vm="@vm.Name">
+        <td>@vm.Name</td>
+        <td>@vm.State</td>
+        <td>@vm.CPUUsage%</td>
+        <td>@vm.MemoryAssignedMB</td>
+        <td>@vm.UpTime</td>
+        <td class="text-center"></td>
+      </tr>
     }
-    </tbody>
+  </tbody>
 </table>
 
 @section Scripts {
-    <!-- Optional: add auto-refresh or confirmation scripts here -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
+  <script>
+    const connection = new signalR.HubConnectionBuilder()
+      .withUrl("/vmhub")
+      .build();
+
+    // Wire up progress, error, and complete handlers
+    connection.on("CheckpointProgress", (name, percent) => {
+      const bar = document.querySelector(`tr[data-vm="${name}"] .progress-bar`);
+      if (bar) {
+        bar.style.width = percent + "%";
+        bar.innerText = percent + "%";
+      }
+    });
+
+    connection.on("CheckpointError", (name, message) => {
+      alert(`Checkpoint failed for ${name}: ${message}`);
+      // restore normal buttons immediately
+      refreshRow(name);
+    });
+
+    connection.on("CheckpointComplete", name => {
+      // next StreamVMUpdates will rebuild the row with fresh CanManage=true
+      // we can optionally restore buttons right now:
+      refreshRow(name);
+    });
+
+    async function startStream() {
+      await connection.start();
+      connection.stream("StreamVMUpdates")
+        .subscribe({
+          next: vms => updateTable(vms),
+          error: err => console.error(err)
+        });
+    }
+
+    function updateTable(vms) {
+      const tbody = document.querySelector("#vmTable tbody");
+      tbody.innerHTML = "";
+      vms.forEach(vm => {
+        const tr = document.createElement("tr");
+        tr.setAttribute("data-vm", vm.name);
+        tr.innerHTML = `
+          <td>${vm.name}</td>
+          <td>${vm.state}</td>
+          <td>${vm.cpuUsage}%</td>
+          <td>${vm.memoryAssignedMB}</td>
+          <td>${vm.upTime}</td>
+          <td class="text-center">${actionButtons(vm)}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // re-render that row’s actions (used after checkpoint finish or error)
+    function refreshRow(name) {
+      const row = document.querySelector(`tr[data-vm="${name}"]`);
+      if (!row) return;
+      // find the VM object in last update (could store last array globally)
+      // but simplest: trigger a one-time stream update
+      // OR just rebuild entire table on complete:
+      // do nothing, let next stream call updateTable.
+    }
+
+    function actionButtons(vm) {
+      if (vm.state.toLowerCase() !== "running") {
+        return `<button onclick="vmAction('Start','${vm.name}')" 
+                         class="btn btn-success btn-sm">Start</button>`;
+      }
+
+      // always show 3 buttons; disable Stop/Restart if !canManage
+      const stopClass = vm.canManage ? "btn-danger" : "btn-secondary";
+      const restartClass = vm.canManage ? "btn-warning" : "btn-secondary";
+      const stopClick = vm.canManage
+        ? `vmAction('Stop','${vm.name}')`
+        : `alert('Please create a checkpoint first before stopping.')`;
+      const restartClick = vm.canManage
+        ? `vmAction('Restart','${vm.name}')`
+        : `alert('Please create a checkpoint first before restarting.')`;
+
+      return `
+        <button onclick="${stopClick}" class="btn ${stopClass} btn-sm me-1">
+          Stop
+        </button>
+        <button onclick="${restartClick}" class="btn ${restartClass} btn-sm me-1">
+          Restart
+        </button>
+        <button onclick="startCheckpoint('${vm.name}')" class="btn btn-primary btn-sm">
+          Checkpoint
+        </button>
+      `;
+    }
+
+    // Replace cell content with an indeterminate progress bar
+    function startCheckpoint(name) {
+      const cell = document.querySelector(`tr[data-vm="${name}"] td:last-child`);
+      cell.innerHTML = `
+        <div class="progress" style="height:1.5rem;">
+          <div class="progress-bar progress-bar-striped progress-bar-animated" 
+               role="progressbar" style="width:0%">0%</div>
+        </div>
+      `;
+      connection.invoke("CreateCheckpoint", name)
+        .catch(err => alert("Checkpoint invocation failed: " + err));
+    }
+
+    function vmAction(action, name) {
+      fetch(`/VMs/${action}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name })
+      });
+    }
+
+    startStream().catch(console.error);
+  </script>
 }

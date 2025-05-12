@@ -1,3 +1,4 @@
+using DQVMsManagement.Hubs;
 using DQVMsManagement.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
@@ -11,9 +12,12 @@ builder.Services.AddControllersWithViews();
 // 2) Register your Hyper-V management service
 builder.Services.AddSingleton<HyperVService>();
 
+// 3) Register SignalR
+builder.Services.AddSignalR();
+
 var app = builder.Build();
 
-// 3) Middleware pipeline
+// 4) Middleware pipeline
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
@@ -25,9 +29,11 @@ app.UseStaticFiles();
 app.UseRouting();
 app.UseAuthorization();
 
-// 4) Default route → VMs/Index
+// 5) Map controllers and hub
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=VMs}/{action=Index}/{id?}");
+
+app.MapHub<VMHub>("/vmhub");
 
 app.Run();
