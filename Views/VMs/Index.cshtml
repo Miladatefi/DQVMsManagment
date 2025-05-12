@@ -1,14 +1,11 @@
 @model IEnumerable<DQVMsManagement.Models.VMInfo>
+@using System
 
 @{
     ViewData["Title"] = "VMs Dashboard";
 }
 
 <h1>Hyper-V Virtual Machines</h1>
-
-<p class="text-secondary">
-    Below is a list of VMs on this host along with their current CPU and memory usage.
-</p>
 
 <table class="table table-striped table-hover align-middle">
     <thead class="table-dark">
@@ -17,34 +14,41 @@
             <th>State</th>
             <th>CPU Usage (%)</th>
             <th>Memory (MB)</th>
+            <th>Up Time</th>
             <th class="text-center">Actions</th>
         </tr>
     </thead>
     <tbody>
-    @foreach (var vm in Model)
+    @foreach(var vm in Model)
     {
         <tr>
             <td>@vm.Name</td>
             <td>@vm.State</td>
             <td>@vm.CPUUsage%</td>
             <td>@vm.MemoryAssignedMB</td>
+            <td>
+                @* Display hh:mm:ss (or “–” if not running) *@
+                @(vm.UpTime.HasValue
+                    ? vm.UpTime.Value.ToString(@"dd\:hh\:mm\:ss")
+                    : "–")
+            </td>
             <td class="text-center">
                 @if (vm.State.Equals("Running", StringComparison.OrdinalIgnoreCase))
                 {
-                    <form asp-action="Stop"   asp-controller="VMs" method="post" class="d-inline">
+                    <form asp-action="Stop" method="post" class="d-inline">
                         <input type="hidden" name="name" value="@vm.Name" />
-                        <button type="submit" class="btn btn-danger btn-sm me-1">Stop</button>
+                        <button class="btn btn-danger btn-sm me-1">Stop</button>
                     </form>
-                    <form asp-action="Restart" asp-controller="VMs" method="post" class="d-inline">
+                    <form asp-action="Restart" method="post" class="d-inline">
                         <input type="hidden" name="name" value="@vm.Name" />
-                        <button type="submit" class="btn btn-warning btn-sm">Restart</button>
+                        <button class="btn btn-warning btn-sm">Restart</button>
                     </form>
                 }
                 else
                 {
-                    <form asp-action="Start" asp-controller="VMs" method="post" class="d-inline">
+                    <form asp-action="Start" method="post" class="d-inline">
                         <input type="hidden" name="name" value="@vm.Name" />
-                        <button type="submit" class="btn btn-success btn-sm">Start</button>
+                        <button class="btn btn-success btn-sm">Start</button>
                     </form>
                 }
             </td>
@@ -52,7 +56,3 @@
     }
     </tbody>
 </table>
-
-@section Scripts {
-    <!-- Optional: add auto-refresh or confirmation scripts here -->
-}

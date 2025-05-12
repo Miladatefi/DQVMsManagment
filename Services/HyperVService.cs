@@ -12,35 +12,40 @@ namespace DQVMsManagement.Services
             var vms = new List<VMInfo>();
             using var ps = PowerShell.Create();
 
-            // 1) Ensure Hyper-V module is loaded
-            ps.AddCommand("Import-Module").AddArgument("Hyper-V");
-            ps.Invoke();
+            // Load Hyper-V module
+            ps.AddCommand("Import-Module").AddArgument("Hyper-V").Invoke();
             ps.Commands.Clear();
 
-            // 2) Get all VMs on local host
+            // Fetch all VMs
             ps.AddCommand("Get-VM");
             var results = ps.Invoke();
 
-            // 3) Map each PSObject to VMInfo
             foreach (var vm in results)
             {
                 var nameProp  = vm.Members["Name"]?.Value?.ToString() ?? string.Empty;
                 var stateProp = vm.Members["State"]?.Value?.ToString() ?? string.Empty;
 
+                // CPU & Memory
                 int cpu = vm.Members["CPUUsage"]?.Value is not null
                     ? Convert.ToInt32(vm.Members["CPUUsage"].Value)
                     : 0;
-
                 long memMb = vm.Members["MemoryAssigned"]?.Value is not null
                     ? Convert.ToInt64(vm.Members["MemoryAssigned"].Value) / (1024 * 1024)
                     : 0L;
+
+                // Uptime: available when VM is Running (Get-VM shows this column by default) :contentReference[oaicite:0]{index=0}
+                TimeSpan? up = null;
+                var upObj = vm.Members["Uptime"]?.Value;
+                if (upObj is TimeSpan ts)
+                    up = ts;
 
                 vms.Add(new VMInfo
                 {
                     Name             = nameProp,
                     State            = stateProp,
                     CPUUsage         = cpu,
-                    MemoryAssignedMB = memMb
+                    MemoryAssignedMB = memMb,
+                    UpTime           = up
                 });
             }
 

@@ -377,6 +377,7 @@ C:\Projects\DQVMsManagement\obj\Debug\net8.0-windows\DQVMsManagement.csproj.Core
 C:\Projects\DQVMsManagement\obj\Debug\net8.0-windows\DQVMsManagement.MvcApplicationPartsAssemblyInfo.cache
 C:\Projects\DQVMsManagement\obj\Debug\net8.0-windows\DQVMsManagement.RazorAssemblyInfo.cache
 C:\Projects\DQVMsManagement\obj\Debug\net8.0-windows\DQVMsManagement.RazorAssemblyInfo.cs
+C:\Projects\DQVMsManagement\obj\Debug\net8.0-windows\DQVMsManagement.sourcelink.json
 C:\Projects\DQVMsManagement\obj\Debug\net8.0-windows\staticwebassets.build.json
 C:\Projects\DQVMsManagement\obj\Debug\net8.0-windows\staticwebassets.development.json
 C:\Projects\DQVMsManagement\obj\Debug\net8.0-windows\staticwebassets\msbuild.DQVMsManagement.Microsoft.AspNetCore.StaticWebAssets.props
@@ -393,4 +394,3 @@ C:\Projects\DQVMsManagement\obj\Debug\net8.0-windows\refint\DQVMsManagement.dll
 C:\Projects\DQVMsManagement\obj\Debug\net8.0-windows\DQVMsManagement.pdb
 C:\Projects\DQVMsManagement\obj\Debug\net8.0-windows\DQVMsManagement.genruntimeconfig.cache
 C:\Projects\DQVMsManagement\obj\Debug\net8.0-windows\ref\DQVMsManagement.dll
-C:\Projects\DQVMsManagement\obj\Debug\net8.0-windows\DQVMsManagement.sourcelink.json
