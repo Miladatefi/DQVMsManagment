@@ -393,3 +393,4 @@ C:\Projects\DQVMsManagement\obj\Debug\net8.0-windows\refint\DQVMsManagement.dll
 C:\Projects\DQVMsManagement\obj\Debug\net8.0-windows\DQVMsManagement.pdb
 C:\Projects\DQVMsManagement\obj\Debug\net8.0-windows\DQVMsManagement.genruntimeconfig.cache
 C:\Projects\DQVMsManagement\obj\Debug\net8.0-windows\ref\DQVMsManagement.dll
+C:\Projects\DQVMsManagement\obj\Debug\net8.0-windows\DQVMsManagement.sourcelink.json
