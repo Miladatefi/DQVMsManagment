@@ -14,7 +14,6 @@
     </tr>
   </thead>
   <tbody>
-    @* Initial rows (JS will overwrite) *@
     @foreach (var vm in Model)
     {
       <tr data-vm="@vm.Name">
@@ -32,38 +31,29 @@
 @section Scripts {
   <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
   <script>
+    // Build connection with auto-reconnect
     const connection = new signalR.HubConnectionBuilder()
       .withUrl("/vmhub")
+      .withAutomaticReconnect()
       .build();
 
-    // Wire up progress, error, and complete handlers
-    connection.on("CheckpointProgress", (name, percent) => {
-      const bar = document.querySelector(`tr[data-vm="${name}"] .progress-bar`);
-      if (bar) {
-        bar.style.width = percent + "%";
-        bar.innerText = percent + "%";
-      }
-    });
-
-    connection.on("CheckpointError", (name, message) => {
-      alert(`Checkpoint failed for ${name}: ${message}`);
-      // restore normal buttons immediately
-      refreshRow(name);
-    });
-
-    connection.on("CheckpointComplete", name => {
-      // next StreamVMUpdates will rebuild the row with fresh CanManage=true
-      // we can optionally restore buttons right now:
-      refreshRow(name);
-    });
-
     async function startStream() {
-      await connection.start();
-      connection.stream("StreamVMUpdates")
-        .subscribe({
-          next: vms => updateTable(vms),
-          error: err => console.error(err)
+      try {
+        await connection.start();
+        const stream = connection.stream("StreamVMUpdates");
+        stream.subscribe({
+          next: updateTable,
+          error: err => {
+            console.error("Stream error:", err);
+            // Try to re-establish the stream after a delay
+            setTimeout(startStream, 5000);
+          },
+          complete: () => console.warn("Stream completed")
         });
+      } catch (err) {
+        console.error("Connection failed:", err);
+        setTimeout(startStream, 5000);
+      }
     }
 
     function updateTable(vms) {
@@ -84,56 +74,38 @@
       });
     }
 
-    // re-render that row’s actions (used after checkpoint finish or error)
-    function refreshRow(name) {
-      const row = document.querySelector(`tr[data-vm="${name}"]`);
-      if (!row) return;
-      // find the VM object in last update (could store last array globally)
-      // but simplest: trigger a one-time stream update
-      // OR just rebuild entire table on complete:
-      // do nothing, let next stream call updateTable.
-    }
-
     function actionButtons(vm) {
       if (vm.state.toLowerCase() !== "running") {
-        return `<button onclick="vmAction('Start','${vm.name}')" 
+        return `<button onclick="vmAction('Start','${vm.name}')"
                          class="btn btn-success btn-sm">Start</button>`;
       }
 
-      // always show 3 buttons; disable Stop/Restart if !canManage
       const stopClass = vm.canManage ? "btn-danger" : "btn-secondary";
       const restartClass = vm.canManage ? "btn-warning" : "btn-secondary";
       const stopClick = vm.canManage
         ? `vmAction('Stop','${vm.name}')`
-        : `alert('Please create a checkpoint first before stopping.')`;
+        : `alert('Create a checkpoint first.')`;
       const restartClick = vm.canManage
         ? `vmAction('Restart','${vm.name}')`
-        : `alert('Please create a checkpoint first before restarting.')`;
+        : `alert('Create a checkpoint first.')`;
 
       return `
-        <button onclick="${stopClick}" class="btn ${stopClass} btn-sm me-1">
-          Stop
-        </button>
-        <button onclick="${restartClick}" class="btn ${restartClass} btn-sm me-1">
-          Restart
-        </button>
-        <button onclick="startCheckpoint('${vm.name}')" class="btn btn-primary btn-sm">
-          Checkpoint
-        </button>
+        <button onclick="${stopClick}" class="btn ${stopClass} btn-sm me-1">Stop</button>
+        <button onclick="${restartClick}" class="btn ${restartClass} btn-sm me-1">Restart</button>
+        <button onclick="startCheckpoint('${vm.name}')" class="btn btn-primary btn-sm">Checkpoint</button>
       `;
     }
 
-    // Replace cell content with an indeterminate progress bar
     function startCheckpoint(name) {
       const cell = document.querySelector(`tr[data-vm="${name}"] td:last-child`);
       cell.innerHTML = `
         <div class="progress" style="height:1.5rem;">
-          <div class="progress-bar progress-bar-striped progress-bar-animated" 
+          <div class="progress-bar progress-bar-striped progress-bar-animated"
                role="progressbar" style="width:0%">0%</div>
         </div>
       `;
       connection.invoke("CreateCheckpoint", name)
-        .catch(err => alert("Checkpoint invocation failed: " + err));
+        .catch(err => alert("Checkpoint failed: " + err));
     }
 
     function vmAction(action, name) {
@@ -144,6 +116,7 @@
       });
     }
 
-    startStream().catch(console.error);
+    // Kick off the streaming loop
+    startStream();
   </script>
 }

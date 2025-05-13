@@ -1,0 +1,124 @@
+@model DQVMsManagement.Models.AdminDashboardViewModel
+@{
+    ViewData["Title"] = "User Management";
+    var pageSize = 12;
+}
+
+<h2>User Management</h2>
+<a asp-action="Create" class="btn btn-success mb-3">Create New User</a>
+
+<table class="table table-sm table-striped table-hover mb-5">
+    <thead class="table-dark">
+        <tr>
+            <th>Username</th>
+            <th>Role</th>
+            <th>Active</th>
+            <th class="text-center">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var user in Model.Users)
+    {
+        <tr>
+            <td>@user.Username</td>
+            <td>@user.Role</td>
+            <td>@(user.IsActive ? "Yes" : "No")</td>
+            <td class="text-center">
+                <a asp-action="ChangePassword" asp-route-username="@user.Username" 
+                   class="btn btn-warning btn-sm me-1">Edit Password</a>
+                <form asp-action="ToggleActive" method="post" class="d-inline">
+                    <input type="hidden" name="username" value="@user.Username" />
+                    <button class="btn btn-secondary btn-sm me-1">
+                        @(user.IsActive ? "Deactivate" : "Activate")
+                    </button>
+                </form>
+                <form asp-action="Delete" method="post" class="d-inline" 
+                      onsubmit="return confirm('Delete user @user.Username?');">
+                    <input type="hidden" name="username" value="@user.Username" />
+                    <button class="btn btn-danger btn-sm">Delete</button>
+                </form>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
+
+<h3>Login History</h3>
+<div class="row">
+    <div class="col-6">
+        <table class="table table-sm table-bordered" id="historyTable">
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Date/Time</th>
+                    <th>IP Address</th>
+                </tr>
+            </thead>
+            <tbody>
+                @* Will be populated/paginated by JS *@
+            </tbody>
+        </table>
+        <nav>
+            <ul class="pagination" id="historyPager"></ul>
+        </nav>
+    </div>
+</div>
+
+@section Scripts {
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
+  <script>
+    const hub = new signalR.HubConnectionBuilder()
+      .withUrl("/vmhub")
+      .build();
+
+    let historyData = [];
+    let currentPage = 1;
+    const pageSize = @pageSize;
+
+    function renderPage(page) {
+      currentPage = page;
+      const start = (page - 1) * pageSize;
+      const pageItems = historyData.slice(start, start + pageSize);
+      const tbody = document.querySelector("#historyTable tbody");
+      tbody.innerHTML = "";
+      pageItems.forEach(e => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${e.username}</td>
+          <td>${new Date(e.timestamp).toLocaleString()}</td>
+          <td>${e.ip}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+      renderPager();
+    }
+
+    function renderPager() {
+      const totalPages = Math.ceil(historyData.length / pageSize) || 1;
+      const ul = document.getElementById("historyPager");
+      ul.innerHTML = "";
+      for (let i = 1; i <= totalPages; i++) {
+        const li = document.createElement("li");
+        li.className = "page-item" + (i === currentPage ? " active" : "");
+        li.innerHTML = `<a class="page-link" href="#">${i}</a>`;
+        li.onclick = () => { renderPage(i); return false; };
+        ul.appendChild(li);
+      }
+    }
+
+    function updateHistory(entries) {
+      historyData = entries.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+      renderPage(1);
+    }
+
+    hub.start()
+       .then(() => {
+         hub.stream("StreamLoginHistory")
+            .subscribe({
+              next: updateHistory,
+              error: err => console.error(err)
+            });
+       })
+       .catch(console.error);
+  </script>
+}

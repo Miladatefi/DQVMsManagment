@@ -1,0 +1,16 @@
+@{
+    ViewData["Title"] = "Login";
+}
+<h2>Login</h2>
+<form asp-action="Login" method="post">
+    <input name="returnUrl" type="hidden" value="@ViewData["ReturnUrl"]" />
+    <div class="mb-3">
+        <label class="form-label">Username</label>
+        <input name="username" class="form-control" required />
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Password</label>
+        <input name="password" type="password" class="form-control" required />
+    </div>
+    <button type="submit" class="btn btn-primary">Log In</button>
+</form>

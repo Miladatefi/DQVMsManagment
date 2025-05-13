@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("DQVMsManagement")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+0eaba32fdbd1e32eaf44d95fcb9456a2533b53df")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+0b9e7b151364c2140e5cc4676c6c41e77cf169d2")]
 [assembly: System.Reflection.AssemblyProductAttribute("DQVMsManagement")]
 [assembly: System.Reflection.AssemblyTitleAttribute("DQVMsManagement")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
